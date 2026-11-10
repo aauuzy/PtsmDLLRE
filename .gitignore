@@ -1,0 +1,12 @@
+# Samples and binaries are never committed
+app/
+sample/
+*.dll
+*.exe
+*.bin
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

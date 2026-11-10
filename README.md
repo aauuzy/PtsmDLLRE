@@ -65,8 +65,8 @@ The findings ledger (`docs/research/FINDINGS.md`) is the source of truth. Each c
 
 ## Authorship
 
-Research direction, scope, and verification by Gavin W. Hatcher. Produced with AI assistance for disassembly interpretation, tooling, and drafting; all claims are verified against the binary before being recorded. (Confirm this wording against the statement in XenoDLLRE so the two repositories match.)
+Research direction, sample acquisition and verification by Gavin Hatcher ([aauuzy](https://github.com/aauuzy)). AI assistants are used during analysis, tooling and writing; all claims are verified against the binary before being recorded.
 
 ## License
 
-To match XenoDLLRE. Copy the same LICENSE file into this repository.
+Original code and documentation: MIT ([`LICENSE`](LICENSE)). Potassium and Roblox are the property of their respective owners. Short excerpts and identifiers from Potassium's code are quoted for research and detection purposes only.
