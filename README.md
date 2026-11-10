@@ -22,9 +22,18 @@ The distinction determines whether the behavior is a developer-hardening concern
 
 ## Status
 
-Phase 1 in progress. The sample is Potassium 1.6.0: a single unsigned 28 MB Tauri executable (Rust backend, WebView2 interface). Section entropy does not indicate packing or virtualization; its difficulty comes from size, not protection. See [`docs/research/FINDINGS.md`](docs/research/FINDINGS.md) for the evidence.
+Phase 1-3 static analysis complete (findings P-01 to P-24 in [`docs/research/FINDINGS.md`](docs/research/FINDINGS.md)). Potassium 1.6.0 is a single unsigned 28 MB Tauri application (Rust backend, WebView2 interface, Vite/React frontend), not packed or virtualized; its difficulty is size, not protection. The cloud channels on `potassium.pro`, the on-disk footprint, the command surface, and the local MCP server with its full JSON-RPC tool protocol are all mapped.
 
-Nothing is recorded as a finding until it is verified against the binary. The sections below describe the intended structure; they are populated as claims are confirmed.
+What remains needs a desktop and is dynamic or requires disassembly: the attach mechanism, the resource payload and its validation, and the server-crash cause.
+
+## Next steps
+
+The static pass is complete. The remaining work, in priority order:
+
+1. Attach mechanism. Open `Potassium.exe` in a disassembler (Ghidra, Binary Ninja), locate the handler behind the `attach` command, and record which operating-system APIs it uses to make a Roblox client available. This is the one structural gap. See the Attach mechanism section of [`docs/research/ARCHITECTURE.md`](docs/research/ARCHITECTURE.md).
+2. Resource channel. Capture Potassium's own traffic to `files.potassium.pro` during an update to document the `/resource` and `/hashes` exchange: whether the payload is encrypted and how it is validated. Protocol level only.
+3. Server-impact capability. Reproduce the RemoteEvent flood in a private experience you own, with remotes under your control, and measure whether server-side rate limiting and argument validation prevent it (Phase 5 in [`docs/research/METHODOLOGY.md`](docs/research/METHODOLOGY.md)). This is what classifies the server crash as game-level or engine-level.
+4. Detection. Once the attach mechanism and any resource format are known, write the detector and YARA rules against the signals in [`docs/defense/DETECTION.md`](docs/defense/DETECTION.md).
 
 ## Repository layout (planned)
 

@@ -14,7 +14,7 @@ On disk, Potassium uses `%LOCALAPPDATA%\Potassium` with `workspace`, `autoexec`,
 
 ## Attach mechanism
 
-To be determined. How the loader places Potassium's code into or alongside the Roblox client, and whether it uses a conventional injection path or something closer to Xeno's bytecode-substitution approach.
+Not yet determined, and the primary open item. From the control surface (P-13, P-24): an `attach` command and MCP tool exist, and attached clients are identified by process ID, so the mechanism operates per Roblox process. The mechanism itself is in the compiled Rust and does not appear in strings. Recovering it means reading the `attach` handler in a disassembler (Ghidra or Binary Ninja) and recording which operating-system APIs it uses to make a client available for execution, documented for understanding and detection, not reproduced.
 
 ## Execution model
 
