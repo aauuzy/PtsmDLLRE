@@ -128,6 +128,16 @@ P-19  confirmed  S       Dependency SBOM, read from embedded crate paths (may be
                          brotli-decompressor 5.0.1; base64, data-encoding, uuid 1.23.2.
 P-20  probable   S       The .lnk shortcuts (P-10) are written by Potassium itself, as
                          implied by the cfb 0.7.3 dependency (the format .lnk files use).
+P-21  confirmed  S       The MCP server exposes a small tool set for AI-driven control:
+                         execute_script (runs a script; schema properties include script,
+                         code, content), read_console (description string "Read captured
+                         console output"), and attach. Together these are an execute-and-
+                         observe loop an external agent can drive. Other tools may exist
+                         but were not confirmed.
+P-22  confirmed  S       An embedded Roblox API type-definition blob is present (roughly
+                         8,193 lines of RBXScriptSignal/type declarations), consistent with
+                         an in-app script editor providing Luau autocomplete. Benign in
+                         itself; confirms the UI includes a script editor.
 ```
 
 ## Corrections log

@@ -15,6 +15,10 @@ These are not two severities of the same finding; they are two different finding
 
 Independent of which cause holds, the observed effect is a denial of service against everyone in the affected server instance: all players are disconnected, and play in that instance stops until a new instance starts. Unlike a client-side cheat whose effect is mostly confined to the person running it, this affects other players and the game's developer, who did nothing to invite it. That is what makes the capability worth understanding carefully.
 
+## AI-control surface
+
+Unlike Xeno, Potassium ships a local MCP server and registers it into AI coding tools (Claude Code, Codex, Cursor, VSCode), exposing `execute_script`, `read_console`, and `attach` to an external agent (P-17, P-18, P-21). This does not add a new capability beyond what the GUI already offers; it makes the existing capability automatable, so a script can be run and its output read back by an agent rather than a person. The security-relevant points are that the endpoint is authenticated with a bearer token rather than open, and that its presence is a specific, checkable indicator: an unexpected Potassium MCP entry in a developer's AI-tool config is a clear sign the tool is installed. The significance of agent-driven execution is noted, not overstated; it is the same script-execution capability under new control.
+
 ## Prevalence
 
 Not estimated. The project makes no claim about how many people use Potassium or how often this capability is used. Any such number would be a guess, and guesses are not recorded here.
