@@ -4,7 +4,13 @@ How Potassium is built and how its parts fit together. Every factual statement i
 
 ## Protection and anti-analysis
 
-To be determined. The sample is reported to be harder to unpack than Xeno, so this is the first thing characterized: packing or virtualization, section entropy, integrity self-checks, anti-debugging, and any licensing or hardware-binding layer. Nothing downstream can be trusted until the protection is understood and, where necessary, unwrapped for static reading.
+Potassium 1.6.0 ships as a single 28 MB executable built with Tauri: a Rust backend hosting a WebView2 user interface (P-01, P-05). It is unsigned (P-04).
+
+Section entropy does not indicate packing or virtualization of the code (P-02, P-03). The perception that it is harder to analyze than Xeno comes from scale rather than protection: a large Rust binary with heavy inlining and an embedded web frontend. Integrity self-checks, anti-debugging, and any licensing layer are not yet examined.
+
+The package holds no separate injectable DLL (P-08), so the component that runs inside the Roblox client is either embedded in the executable or obtained at runtime.
+
+On disk, Potassium uses `%LOCALAPPDATA%\Potassium` with `workspace`, `autoexec`, and `scripts` folders (P-10).
 
 ## Attach mechanism
 

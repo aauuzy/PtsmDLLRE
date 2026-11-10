@@ -2,7 +2,7 @@
 
 Claim ledger for the Potassium static analysis. This file is the source of truth for every factual claim the project makes. No claim appears in the README, the architecture notes, or the defensive documents unless it is recorded here first and carries supporting evidence.
 
-Status: empty. Static analysis has not begun. Entries are added only after they are verified against the binary.
+Status: Phase 1 (protection and identification) in progress. Entries are added only after they are verified against the binary.
 
 ## Format
 
@@ -26,7 +26,55 @@ A finding may carry more than one evidence code. A statement with no evidence co
 
 ## Findings
 
-None yet.
+### Sample
+
+| File | Size (bytes) | SHA-256 |
+| --- | --- | --- |
+| `Potassium.exe` | 28,410,368 | `78f75e896b4b5ad719bc3c79182c5d5ba2dff071dce91cc160dcdf1308b5f6ea` |
+| `msvcp140.dll` | 557,728 | `0f885b509a685d2bbfa652fed26b5fb31d88fbdab0a978c641d1c7b8aa460aa9` |
+| `vcruntime140.dll` | 124,544 | `d5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066` |
+| `vcruntime140_1.dll` | 49,792 | `1f2d41c4aa5db0bc33ebf7b66d72943a817d7ce6cbe880502a9403823633093f` |
+
+### Phase 1
+
+```
+P-01  confirmed  S       Potassium.exe is a PE32+ x86-64 GUI executable with six sections
+                         (.text .rdata .data .pdata .rsrc .reloc). Version resource:
+                         ProductName "Potassium", FileVersion/ProductVersion 1.6.0,
+                         CompanyName "pot". PE header TimeDateStamp 1793968995 (raw value;
+                         header timestamps can be set arbitrarily and are not relied on).
+P-02  confirmed  S       Section entropy: .text 6.25, .rdata 7.38, .data 4.02, .pdata 6.82,
+                         .rsrc 7.97, .reloc 5.48. No overlay (raw section data ends at
+                         end of file).
+P-03  probable   S       The code is not packed or virtualized at the section level. A
+                         .text entropy of 6.25 is typical of ordinary compiled code; a
+                         packed or VM-protected code section is typically near 8. No
+                         VMProtect or Themida marker strings were found. Pending
+                         confirmation by reading the entry point in disassembly.
+P-04  confirmed  S       The executable carries no Authenticode signature: the security
+                         data directory is empty (offset 0, size 0). Contrast: Xeno
+                         v1.3.65 is signed with a self-signed certificate.
+P-05  probable   S       Built with Tauri (Rust backend, WebView2 frontend). Marker counts
+                         in the file: "tauri" 184, "TAURI" 61, "webview" 133, "WebView2"
+                         13, "rust" 992. "Electron" appears only twice and is not taken as
+                         evidence of Electron.
+P-06  confirmed  S       Luau-related strings are present: "Luau" 472, "luau" 30,
+                         "loadstring" 14, "hookfunction" 1, "hookmetamethod" 1,
+                         "RemoteEvent" 8, "FireServer" 2, "Roblox" 85. Presence only; what
+                         code references them is not yet determined.
+P-07  confirmed  I       Import table includes ws2_32.dll (21 functions), bcrypt.dll (1),
+                         bcryptprimitives.dll (1), ntdll.dll (9), kernel32.dll (131),
+                         user32.dll (121), and MSVCP140.dll (36).
+P-08  confirmed  S       The package contains no separate injectable DLL. Besides
+                         Potassium.exe it holds only three files named as Microsoft Visual
+                         C++ runtimes and three shortcuts. Any injected component is
+                         therefore embedded in Potassium.exe or obtained at runtime.
+P-09  tentative  S       msvcp140.dll, vcruntime140.dll and vcruntime140_1.dll are stock
+                         Microsoft redistributables. Based on name and PE type only; not
+                         yet verified against Microsoft's signatures.
+P-10  confirmed  S       The three shortcuts (workspace.lnk, autoexec.lnk, scripts.lnk)
+                         target %LOCALAPPDATA%\Potassium\workspace, \autoexec and \scripts.
+```
 
 ## Corrections log
 
@@ -36,7 +84,8 @@ None yet.
 
 ## Open questions
 
-- Does the sample use packing, virtualization, or other anti-analysis protection, and of what kind? (Phase 1, gating.)
+- Is the entry point ordinary compiler-generated startup code? This would confirm P-03.
+- Is the injected component embedded in Potassium.exe or obtained at runtime (P-08)?
 - How does Potassium attach to the Roblox client process?
 - How does it deliver and execute script, and over what local channel?
 - The server-impact capability: is the server shutdown caused by volume against an unprotected RemoteEvent (game-level), or does it occur against a properly rate-limited and validated remote (engine-level)? This is the primary question and is unresolved.

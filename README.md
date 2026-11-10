@@ -22,7 +22,7 @@ The distinction determines whether the behavior is a developer-hardening concern
 
 ## Status
 
-Early. A sample has been acquired. Static analysis has not yet begun. The sample is reported to employ stronger anti-analysis protection than Xeno, so the first phase is characterizing that protection before behavioral analysis can proceed.
+Phase 1 in progress. The sample is Potassium 1.6.0: a single unsigned 28 MB Tauri executable (Rust backend, WebView2 interface). Section entropy does not indicate packing or virtualization; its difficulty comes from size, not protection. See [`docs/research/FINDINGS.md`](docs/research/FINDINGS.md) for the evidence.
 
 Nothing is recorded as a finding until it is verified against the binary. The sections below describe the intended structure; they are populated as claims are confirmed.
 

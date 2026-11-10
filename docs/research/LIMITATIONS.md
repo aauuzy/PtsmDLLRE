@@ -4,8 +4,9 @@ What this analysis does not establish, and why. Recording limits honestly is par
 
 ## Current limitations
 
-- Analysis has not started. Nothing about the binary is established yet.
-- The sample is reported to use stronger protection than Xeno. If it is virtualized, parts of the logic may not be fully recoverable by static reading, and those parts will be marked as such rather than guessed.
+- Phase 1 has established identity, signing status, framework, and section-level protection status only. Attach, execution, and channels are not yet examined.
+- The "not packed" conclusion (P-03) rests on entropy and absent marker strings, not yet on disassembly.
+- The framework identification (P-05) rests on string counts. String counts show what text is present, not what code uses it.
 - The server-impact capability has not been reproduced or measured. The game-level versus engine-level question is open, and neither answer is assumed.
 
 ## Standing limitations
