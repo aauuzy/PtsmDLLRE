@@ -2,7 +2,7 @@
 
 Claim ledger for the Potassium static analysis. This file is the source of truth for every factual claim the project makes. No claim appears in the README, the architecture notes, or the defensive documents unless it is recorded here first and carries supporting evidence.
 
-Status: Phase 1 (protection and identification) in progress. Entries are added only after they are verified against the binary.
+Status: Phase 1-3 complete. Entries are added only after they are verified against the binary. The concrete strings and structural values behind these findings are collected in [`EVIDENCE.md`](EVIDENCE.md), and the process that produced them is in [`METHODOLOGY.md`](METHODOLOGY.md).
 
 ## Format
 
