@@ -4,23 +4,35 @@ How Potassium is built and how its parts fit together. Every factual statement i
 
 ## Protection and anti-analysis
 
-To be determined. The sample is reported to be harder to unpack than Xeno, so this is the first thing characterized: packing or virtualization, section entropy, integrity self-checks, anti-debugging, and any licensing or hardware-binding layer. Nothing downstream can be trusted until the protection is understood and, where necessary, unwrapped for static reading.
+Potassium 1.6.0 ships as a single 28 MB executable built with Tauri: a Rust backend hosting a WebView2 user interface (P-01, P-05). It is unsigned (P-04).
+
+Section entropy does not indicate packing or virtualization of the code (P-02, P-03). The perception that it is harder to analyze than Xeno comes from scale rather than protection: a large Rust binary with heavy inlining and an embedded web frontend. Integrity self-checks, anti-debugging, and any licensing layer are not yet examined.
+
+The package holds no separate injectable DLL (P-08), so the component that runs inside the Roblox client is either embedded in the executable or obtained at runtime.
+
+On disk, Potassium uses `%LOCALAPPDATA%\Potassium` with `workspace`, `autoexec`, and `scripts` folders (P-10).
 
 ## Attach mechanism
 
-To be determined. How the loader places Potassium's code into or alongside the Roblox client, and whether it uses a conventional injection path or something closer to Xeno's bytecode-substitution approach.
+Not yet determined, and the primary open item. From the control surface (P-13, P-24): an `attach` command and MCP tool exist, and attached clients are identified by process ID, so the mechanism operates per Roblox process. The mechanism itself is in the compiled Rust and does not appear in strings. Recovering it means reading the `attach` handler in a disassembler (Ghidra or Binary Ninja) and recording which operating-system APIs it uses to make a client available for execution, documented for understanding and detection, not reproduced.
 
 ## Execution model
 
-To be determined. How script is submitted, scheduled, and run, and what local interface the user-facing application uses to drive it.
+The user-facing application exposes its functions as plain Tauri commands invoked by name; the command strings `attach`, `execute`, `autoexec`, `login`, and `update` are present (P-13). The named verbs are consistent with an executor flow (authenticate, attach to the client, run a script, run an autoexec script on attach, self-update), but the handlers behind them have not yet been read, so the wiring is inferred from the names rather than confirmed.
 
 ## Local control channels
 
-To be determined. Any localhost server, named pipe, shared memory, or file-based channel between the application and the injected component, including the request and response format.
+Potassium runs a local MCP (Model Context Protocol) server on `127.0.0.1` at `/mcp`, observed at `127.0.0.1:8224` (P-14). It is implemented with the `rmcp` 2.2.0 crate over a Streamable-HTTP transport built on `axum`/`hyper`/`tower`, speaks MCP protocol version `2025-03-26`, authenticates with a bearer token, and tracks sessions with an `Mcp-Session-Id` header (P-17). The port is configurable and validated to the 1024-65535 range.
+
+The purpose is confirmed by how it installs itself: Potassium writes its MCP server into the configuration of external AI coding tools, `claude-code` (`.claude.json`), `codex` (`config.toml`), `cursor` (`mcp.json`), and `vscode` (P-18). The effect is to expose executor control to an AI agent as an MCP tool, an integration Xeno does not have. It is a conformant JSON-RPC 2.0 MCP server (standard `initialize`, `tools/list`, `tools/call`, notifications; P-23). The tool set implements an attach-execute-observe loop over Roblox clients identified by process ID (P-24): `list_clients` enumerates the attached Roblox clients by PID, `execute_script` runs a script in a chosen PID and returns a console cursor, `read_console` reads output after a cursor (with an optional `wait_ms`), and a clear-console tool resets the console. So an external agent lists the running clients, picks one, runs a script, and polls its output by cursor, the same loop the GUI offers, exposed to automation. The underlying attach step that makes a client available is not visible at this level and lives in the compiled code. `localhost:1420` also appears but is Tauri's default dev-server port and is treated as a build artifact.
+
+## Technology stack
+
+From the embedded crate paths (P-19): the desktop shell is Tauri 2.11.2 with the `wry` WebView2 runtime; the HTTP surface (MCP server) is `axum`/`hyper`/`tower`; outbound HTTPS to `*.potassium.pro` uses `reqwest` with `rustls`; WebSocket support is present via `tungstenite`; `toml_edit` edits the AI tools' config files; `cfb` writes the `.lnk` shortcuts; `brotli-decompressor` handles compressed assets or resources. This is a Rust application, which is why the native code carries no separate injectable DLL in the package.
 
 ## Resource handling
 
-To be determined. Embedded scripts and data, any encryption or compression over them, and any remote endpoints the sample contacts for updates or payloads.
+Potassium contacts `files.potassium.pro` as its update and resource-distribution channel, with route fragments `/version`, `/resource`, `/hashes`, and `/gui_name` (P-11, P-12). This parallels Xeno's remote version and resource channel: a version string, a downloadable resource bundle, and an integrity manifest of hashes. Authentication is handled against `api.potassium.pro/login`. Whether the fetched resource is encrypted, and how it is validated against `/hashes`, is not yet determined. The frontend assets themselves are a Vite/React bundle embedded in the executable (P-16).
 
 ## Server-impact capability
 
