@@ -74,6 +74,36 @@ P-09  tentative  S       msvcp140.dll, vcruntime140.dll and vcruntime140_1.dll a
                          yet verified against Microsoft's signatures.
 P-10  confirmed  S       The three shortcuts (workspace.lnk, autoexec.lnk, scripts.lnk)
                          target %LOCALAPPDATA%\Potassium\workspace, \autoexec and \scripts.
+P-11  confirmed  S       Remote endpoint strings present: https://api.potassium.pro/login,
+                         https://chat.potassium.pro/chat, and https://files.potassium.pro/
+                         with route fragments /version, /resource, /hashes, /gui_name.
+P-12  probable   S       files.potassium.pro is the update and resource-distribution
+                         channel: a version string (/version), a resource bundle
+                         (/resource), an integrity manifest (/hashes). This parallels
+                         Xeno's remote version and resource channel. The fetch-and-use
+                         logic has not been read from code.
+P-13  probable   S       Command-name strings present include attach, execute, autoexec,
+                         login, update. The plugin namespaces in the binary are all stock
+                         Tauri core (window, menu, tray, path, app, webview, image, event,
+                         opener, resources; P-05), so Potassium's own functions are plain
+                         Tauri commands invoked by bare name. That each string is a
+                         registered command bound to the named action is inferred from the
+                         names, not yet confirmed from handler code.
+P-14  probable   S       Local interface on 127.0.0.1 with a /mcp path. Observed address
+                         strings 127.0.0.1:8224 and 127.0.0.1:34254. localhost:1420 is
+                         Tauri's default dev-server port and is treated as a build artifact,
+                         not a runtime channel.
+P-15  probable   S       Potassium appears to run a local MCP (Model Context Protocol)
+                         server. Identifier strings present: mcp_enabled, mcp_status,
+                         mcp_servers, mcp_repl, and an adjacent port/state-manager/repair
+                         reference. The purpose, programmatic or AI-driven control of the
+                         executor, is inferred from these names and the chat.potassium.pro
+                         endpoint, not confirmed from code.
+P-16  confirmed  S       Frontend is a Vite/React bundle embedded by Tauri: /index.html,
+                         /assets/index-EIR5Y9u7.js, /assets/index-Ljal0590.css, Tauri's
+                         ipc.js and isolation_secure.js, bundled fonts (jetbrains-mono,
+                         rubik, noto-color-emoji) and images (login-halloween.png,
+                         sirmeme.png).
 ```
 
 ## Corrections log

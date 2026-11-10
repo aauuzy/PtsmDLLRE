@@ -18,15 +18,15 @@ To be determined. How the loader places Potassium's code into or alongside the R
 
 ## Execution model
 
-To be determined. How script is submitted, scheduled, and run, and what local interface the user-facing application uses to drive it.
+The user-facing application exposes its functions as plain Tauri commands invoked by name; the command strings `attach`, `execute`, `autoexec`, `login`, and `update` are present (P-13). The named verbs are consistent with an executor flow (authenticate, attach to the client, run a script, run an autoexec script on attach, self-update), but the handlers behind them have not yet been read, so the wiring is inferred from the names rather than confirmed.
 
 ## Local control channels
 
-To be determined. Any localhost server, named pipe, shared memory, or file-based channel between the application and the injected component, including the request and response format.
+Potassium exposes a local interface on `127.0.0.1` with a `/mcp` path, observed at address `127.0.0.1:8224` (P-14). A set of identifier strings (`mcp_enabled`, `mcp_status`, `mcp_servers`, `mcp_repl`, plus an adjacent port and state-manager reference) indicates a local MCP (Model Context Protocol) server, apparently for programmatic or AI-driven control of the executor (P-15). This, together with the `chat.potassium.pro` endpoint, points to an AI-integration capability that Xeno does not have. The request and response format of this channel is not yet mapped. `localhost:1420` also appears but is Tauri's default dev-server port and is treated as a build artifact.
 
 ## Resource handling
 
-To be determined. Embedded scripts and data, any encryption or compression over them, and any remote endpoints the sample contacts for updates or payloads.
+Potassium contacts `files.potassium.pro` as its update and resource-distribution channel, with route fragments `/version`, `/resource`, `/hashes`, and `/gui_name` (P-11, P-12). This parallels Xeno's remote version and resource channel: a version string, a downloadable resource bundle, and an integrity manifest of hashes. Authentication is handled against `api.potassium.pro/login`. Whether the fetched resource is encrypted, and how it is validated against `/hashes`, is not yet determined. The frontend assets themselves are a Vite/React bundle embedded in the executable (P-16).
 
 ## Server-impact capability
 
