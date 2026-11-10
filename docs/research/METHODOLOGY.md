@@ -26,6 +26,18 @@ Reproduce the RemoteEvent flood only in a private experience owned by the resear
 
 Produce detection signatures from the static findings, and developer-side countermeasures for the server-impact class: server-authoritative rate limiting, argument validation, and flood detection.
 
+## How Phase 1-3 was performed
+
+A record of the actual process, so the findings can be reproduced.
+
+The package was extracted into an isolated directory; nothing in it was executed. The three bundled DLLs were identified by name and PE type as Microsoft Visual C++ runtimes and set aside. All files were hashed (SHA-256).
+
+`Potassium.exe` was inspected statically with `pefile`: file and optional headers, the six sections with per-section Shannon entropy, the import table, resource types, the security data directory (to check for an Authenticode signature), and the version-info string table. Entropy was the basis for the not-packed assessment; the empty security directory for the unsigned finding.
+
+The full string tables were then extracted, both ASCII (`strings -n 5`) and UTF-16LE (`strings -n 6 -e l`), to files, and read with categorized `grep` passes: framework markers (tauri, rust, webview), network endpoints, the Tauri IPC and command surface, embedded crate paths (for the dependency SBOM) and the project's own source paths, and the MCP protocol methods and tool descriptions. Findings were taken only from strings that recurred and made sense in context; coincidental substring matches in compressed regions were discarded.
+
+Each finding's evidence code records which of these produced it. The disassembly step that would confirm the entry point (P-03) and recover the attach mechanism was not completed in this environment and is deferred to a desktop session; this is stated in `LIMITATIONS.md` rather than worked around.
+
 ## Verification
 
 Every claim is tied to evidence in [`FINDINGS.md`](FINDINGS.md) before it is stated anywhere else. Disassembly citations are re-read against the binary rather than quoted from memory. Where a claim cannot be verified, it is marked tentative or left out.
