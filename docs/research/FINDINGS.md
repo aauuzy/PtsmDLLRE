@@ -2,7 +2,7 @@
 
 Claim ledger for the Potassium static analysis. This file is the source of truth for every factual claim the project makes. No claim appears in the README, the architecture notes, or the defensive documents unless it is recorded here first and carries supporting evidence.
 
-Status: Phase 1-3 complete. Entries are added only after they are verified against the binary. The concrete strings and structural values behind these findings are collected in [`EVIDENCE.md`](EVIDENCE.md), and the process that produced them is in [`METHODOLOGY.md`](METHODOLOGY.md).
+Status: Phase 1-4 complete; Phase 5 (server-impact) is the only remaining item and needs controlled dynamic measurement. Entries are added only after they are verified against the binary. The concrete strings and structural values behind these findings are collected in [`EVIDENCE.md`](EVIDENCE.md), and the process that produced them is in [`METHODOLOGY.md`](METHODOLOGY.md).
 
 ## Format
 
@@ -154,6 +154,107 @@ P-24  confirmed  S       Fuller MCP tool set and control model, from embedded to
                          PID, execute, read output by cursor. Extends P-21.
 ```
 
+### Phase 2-4 (attach, execution, resource handling)
+
+Recovered by static disassembly with `tools/xrefs.py` (functions from `.pdata`, RIP-relative and direct-call edges) plus targeted string context. Disassembly citations are RVAs; the image base is the PE default and addresses are re-read against the binary.
+
+```
+P-25  confirmed  I,D     Potassium.exe contains no code-injection primitives. The import
+                         table has none of VirtualAllocEx, WriteProcessMemory,
+                         CreateRemoteThread, NtWriteVirtualMemory, NtAllocateVirtualMemory,
+                         NtCreateThreadEx, VirtualProtectEx, OpenThread, SetThreadContext,
+                         QueueUserAPC or NtMapViewOfSection, and none of those names appear
+                         as strings for a GetProcAddress lookup (ascii and utf-16 counts all
+                         0). The only process-reach imports are OpenProcess,
+                         QueryFullProcessImageNameW, CreateToolhelp32Snapshot,
+                         Process32FirstW/NextW, GetProcessTimes, TerminateProcess and
+                         DuplicateHandle. The executable itself therefore does not write to
+                         or create a thread in the Roblox process.
+P-26  confirmed  S,D     Attach handler is in src\injector.rs (func D:0x3A67D0). It locates
+                         the Roblox client by enumerating processes
+                         (CreateToolhelp32Snapshot/Process32FirstW/NextW in helper
+                         D:0x3A7C90) and matching the image name "RobloxPlayerBeta.exe"
+                         (lea at D:0x3A6802), confirming the match with
+                         OpenProcess+QueryFullProcessImageNameW (helper D:0x3A79C0). Failure
+                         string: "No Roblox client found. Start the game, then attach."
+P-27  confirmed  S,D     Injection is delegated to a separate injector component, not done
+                         in-process. The attach handler (D:0x3A67D0) runs the injector and
+                         branches on its result: strings "Injector not found. Turn off your
+                         antivirus and restart Potassium." and "Injection failed (exit code
+                         N)" — i.e. a child process whose exit code is read. The injected
+                         payload is a DLL named Potassium.dll (string present). This is why
+                         P-25 holds: the memory-write work lives in the downloaded injector/
+                         DLL, not in Potassium.exe.
+P-28  confirmed  S,D     Potassium.dll, Potassium.exe and Decompiler.exe are obtained at
+                         runtime from files.potassium.pro, not shipped. The download path
+                         (files.rs, func D:0x19B610, reachable as the download_binaries
+                         command) does GET /resource returning JSON (fields version,
+                         description, icons, websiteUrl, roots, role; error "resource
+                         response is missing 'version'"), GET /hashes (integrity manifest),
+                         then downloads the three named files from files.potassium.pro/. The
+                         shipped package holds none of them (only Potassium.exe, three MSVC
+                         runtimes, four .lnk). Resolves P-08: the injected component is
+                         obtained at runtime.
+P-29  confirmed  S,D     Attach failures are modeled as AttachError (builder D:0x3A82E0) with
+                         fields kind, pid, installDir, message; kind values include
+                         channelMismatch, and one message is "could not close the Roblox
+                         client". The installDir and channelMismatch fields show the injected
+                         DLL is matched to a specific Roblox release channel/install, and
+                         that attach may need to close/relaunch the client. This explains the
+                         coupling between /version, download_binaries and a working attach.
+P-30  confirmed  S       The local execution channel is a WebSocket server on 127.0.0.1:8224
+                         implemented in src\ws.rs, with message schema fields action,
+                         content, tab, tabs, message. This is the control channel between the
+                         Potassium backend and the injected Potassium.dll (script in, console
+                         out). It is distinct from the MCP server (src\mcp.rs, http://
+                         127.0.0.1:<port>/mcp; P-14, P-17): ws.rs is the executor transport,
+                         mcp.rs is the AI-automation front door that drives it. The second
+                         address 127.0.0.1:34254 (P-14) appears only in a crate-path region
+                         and is left tentative, not treated as a Potassium runtime channel.
+P-31  confirmed  S       An embedded Luau compiler/VM is present: strings "bytecode version
+                         mismatch (expected [%d..%d], got %d)", "bytecode type version
+                         mismatch", LuauCostModel, LuauUdataDirectAccess (near func
+                         D:0xE192C0). Scripts are compiled to Luau bytecode in-process before
+                         being handed to the execution channel. A compile_moonscript command
+                         (MoonScript source, P-32) and a luau_complete autocomplete command
+                         also exist.
+P-32  confirmed  S       Full Tauri command-name table (at 0x15E3D78): attach, autologin,
+                         username, password, kill_clients, pids, compile_moonscript, engine,
+                         explore_fetch, url, download_binaries, luau_complete (line, column),
+                         repair_client, installDir, set_always_on_top, window, on, source,
+                         chat_send, messages, set_mcp_enabled, state, manager, enabled, port.
+                         Extends P-13 from five inferred names to the recovered set.
+P-33  confirmed  S       Self-update uses a generated batch script with a ping-delay wait
+                         loop ("ping -n 2 127.0.0.1 >nul", "goto wait", ":gone"): it waits
+                         for Potassium.exe to exit, then swaps in the newly downloaded
+                         Potassium.exe (fetched via download_binaries, P-28). Standard
+                         self-replacing-updater pattern.
+P-34  confirmed  S,D     Potassium runs a separate Decompiler.exe child inside a Windows Job
+                         object (AssignProcessToJobObject, func D:0x3A5DF0, src\decompiler.rs)
+                         for script decompilation. Decompiler.exe is downloaded via the
+                         resource channel (P-28), not shipped.
+P-35  probable   S       The server-impact capability is script-driven, not a native
+                         primitive in Potassium.exe. Every FireServer/RemoteEvent occurrence
+                         sits inside the embedded Luau API type-definition / autocomplete
+                         blob ("function FireServer(self, ...: any): ()"; the Instance
+                         class-name list "RemoteEvent","UnreliableRemoteEvent"; the
+                         EnumSecurityCapability list), and the binary contains no native code
+                         that constructs Roblox RemoteEvent traffic. The flood is therefore
+                         produced by a user Luau script run through the normal execution path
+                         (P-30, P-31), consistent with a game-level DoS against an unthrottled
+                         / unvalidated RemoteEvent rather than an engine-level Potassium
+                         exploit. This does not prove the engine is robust; it shows Potassium
+                         adds no native flood primitive. Final game-vs-engine classification
+                         still needs Phase 5 measurement.
+P-36  probable   I,D     No evidence of a kernel-mode driver. The DeviceIoControl,
+                         NtDeviceIoControlFile, NtCreateFile and NtCreateNamedPipeFile imports
+                         are used only by Rust async-runtime functions (D:0xB76560,
+                         D:0xAE34B0, D:0xAE5AA0, D:0xB7B7C0 — mio/tokio AFD socket polling and
+                         std named-pipe/process plumbing), and no \\.\ device path or .sys
+                         resource is present. Attach does not go through a loaded cheat
+                         driver at this level.
+```
+
 ## Corrections log
 
 Records any claim that was recorded and later changed or withdrawn, with the reason. Keeping corrections visible is part of the methodology; a finding that turns out wrong is edited here rather than deleted silently.
@@ -162,8 +263,9 @@ None yet.
 
 ## Open questions
 
-- Is the entry point ordinary compiler-generated startup code? This would confirm P-03.
-- Is the injected component embedded in Potassium.exe or obtained at runtime (P-08)?
-- How does Potassium attach to the Roblox client process?
-- How does it deliver and execute script, and over what local channel?
-- The server-impact capability: is the server shutdown caused by volume against an unprotected RemoteEvent (game-level), or does it occur against a properly rate-limited and validated remote (engine-level)? This is the primary question and is unresolved.
+- Is the entry point ordinary compiler-generated startup code? This would confirm P-03. (Not re-examined; low priority — P-25/P-26/P-36 already read substantial native code and found ordinary compiled Rust.)
+- ~~Is the injected component embedded in Potassium.exe or obtained at runtime (P-08)?~~ Resolved: obtained at runtime (P-28).
+- ~~How does Potassium attach to the Roblox client process?~~ Resolved to the level the sample allows: locate RobloxPlayerBeta.exe, then a downloaded external injector maps Potassium.dll (P-26, P-27, P-28, P-29). The injector's own memory-write technique is not in this sample because the injector is downloaded, not shipped.
+- ~~How does it deliver and execute script, and over what local channel?~~ Resolved: Luau compiled to bytecode in-process (P-31) and carried over a WebSocket channel on 127.0.0.1:8224 (src\ws.rs, P-30) to the injected DLL.
+- The server-impact capability: is the server shutdown caused by volume against an unprotected RemoteEvent (game-level), or does it occur against a properly rate-limited and validated remote (engine-level)? Still the primary open question. P-35 narrows it — Potassium contributes no native flood primitive, so the flood is an ordinary Luau script — but the final classification needs Phase 5 controlled measurement.
+- What memory-write technique does the downloaded injector use, and is Potassium.dll a manual-mapped module or a LoadLibrary target? Not answerable from this sample; needs the downloaded injector/DLL captured from a researcher-owned run.

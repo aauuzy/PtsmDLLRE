@@ -61,3 +61,43 @@ From embedded crate paths, e.g. `index.crates.io-...\rmcp-2.2.0`, `...\tauri-2.1
 ## Local address (P-14)
 
 `127.0.0.1:8224` (observed twice), `127.0.0.1/mcp`, and `127.0.0.1:34254`. `localhost:1420` also present (Tauri default dev-server port; treated as a build artifact).
+
+## Absent injection primitives (P-25)
+
+Import table (kernel32 131, ntdll 9) contains OpenProcess, QueryFullProcessImageNameW, CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, GetProcessTimes, TerminateProcess, DuplicateHandle, LoadLibraryA/W/ExA/ExW, GetProcAddress, CreateProcessW, VirtualProtect (local), CreateThread (local). It contains **none** of: VirtualAllocEx, WriteProcessMemory, ReadProcessMemory, CreateRemoteThread, VirtualProtectEx, OpenThread, GetThreadContext, SetThreadContext, QueueUserAPC, NtWriteVirtualMemory, NtAllocateVirtualMemory, NtProtectVirtualMemory, NtCreateThreadEx, NtMapViewOfSection. Those names also have 0 ascii and 0 utf-16 string matches in the file, so they are not GetProcAddress-resolved. ntdll imports are only file/pipe/ioctl and version/status helpers.
+
+## Attach handler (P-26, P-27, P-29)
+
+`src\injector.rs`, handler func `0x3A67D0`. Helpers: `0x3A7C90` (CreateToolhelp32Snapshot + Process32FirstW/NextW + CloseHandle), `0x3A79C0` (OpenProcess + QueryFullProcessImageNameW + CloseHandle). At `0x3A6802`: `lea rdx, [rip+...]` → `"RobloxPlayerBeta.exe"`, then `call 0x3A7C90`.
+
+Strings referenced from `0x3A67D0`: `"No Roblox client found. Start the game, then attach."`, `"Injector not found. Turn off your antivirus and restart Potassium."`, `"Injection failed (exit code N)"`.
+
+`AttachError` builder `0x3A82E0`, concatenated field/variant run: `AttachError` `kind` `channelMismatch` `pid` `installDir` `message` `#could not close the Roblox client: `.
+
+## Runtime-downloaded binaries (P-28)
+
+Resource/download func `0x19B610` (files.rs). String refs: `https://files.potassium.pro/resource`, `https://files.potassium.pro/hashes`, response field run `versiondescriptioniconswebsiteUrlrootsrole`, `"resource response is missing 'version'"`, `"Couldn't reach the download server: "`. Download-name run (file offset 0x15778B9): `...dll` → `Potassium.dll`, `...exe` → `Potassium.exe`, `Decompiler.exe`, with base `https://files.potassium.pro/`. Shipped package contents (app/extracted): `Potassium.exe`, `msvcp140.dll`, `vcruntime140.dll`, `vcruntime140_1.dll`, `autoexec.lnk`, `scripts.lnk`, `workspace.lnk` — none of the three downloaded files.
+
+## Execution channel (P-30, P-31)
+
+`src\ws.rs`, address `127.0.0.1:8224`, message field run `actioncontenttabstabmessage`. MCP path `http://127.0.0.1:<port>/mcp` from `src\mcp.rs` (separate). Luau VM strings near func `0xE192C0`: `"%s: bytecode version mismatch (expected [%d..%d], got %d)"`, `"bytecode type version mismatch"`, `LuauCostModel`, `LuauUdataDirectAccess`.
+
+## Command surface (P-32)
+
+Command-name blob at file offset 0x15E3D78: `...repair_client` `pid` `installDir` `set_always_on_top` `window` `on` `attach` `autologin` `username` `password` `kill_clients` `pids` `compile_moonscript` `engine` `explore_fetch` `url` `download_binaries` `luau_complete` `line` `column`; adjacent chat run: `source` `chat_send` `messages` `set_mcp_enabled` `state` `manager` `enabled` `port`, with `https://chat.potassium.pro/chat` and `src\chat.rs`.
+
+## Self-update (P-33)
+
+Batch-script fragment (file offset ~0x1577C77): `... >nul` / `if errorlevel 1 goto gone` / `ping -n 2 127.0.0.1 >nul` / `goto wait` / `:gone` / `echo [%TIME...`.
+
+## Decompiler child (P-34)
+
+`src\decompiler.rs`, func `0x3A5DF0` references `Decompiler.exe` and imports `AssignProcessToJobObject`.
+
+## Server-impact strings (P-35)
+
+`FireServer` (2) both inside the Luau typedef blob: `"function FireServer(self, ...: any): ()"`. `RemoteEvent` occurs in the Instance class-name list (`"RemoteEvent", "UnreliableRemoteEvent"`) and the `EnumSecurityCapability` list. No native networking builds Roblox RemoteEvent frames; outbound sockets are reqwest/tungstenite to `*.potassium.pro` only.
+
+## No kernel driver (P-36)
+
+`DeviceIoControl` used by `0xB76560`; `NtDeviceIoControlFile` by `0xAE34B0`; `NtCreateFile` by `0xAE5AA0`; `NtCreateNamedPipeFile` by `0xB7B7C0` — all Rust async-runtime/std functions. No `\\.\<device>` path string and no `.sys` embedded; the only MZ/PE in the file is the main image at offset 0.

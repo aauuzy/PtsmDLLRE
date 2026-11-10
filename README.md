@@ -22,18 +22,20 @@ The distinction determines whether the behavior is a developer-hardening concern
 
 ## Status
 
-Phase 1-3 static analysis complete (findings P-01 to P-24 in [`docs/research/FINDINGS.md`](docs/research/FINDINGS.md)). Potassium 1.6.0 is a single unsigned 28 MB Tauri application (Rust backend, WebView2 interface, Vite/React frontend), not packed or virtualized; its difficulty is size, not protection. The cloud channels on `potassium.pro`, the on-disk footprint, the command surface, and the local MCP server with its full JSON-RPC tool protocol are all mapped.
+Phase 1-4 static analysis complete (findings P-01 to P-36 in [`docs/research/FINDINGS.md`](docs/research/FINDINGS.md); summary in [`reports/POTASSIUM_ANALYSIS.md`](reports/POTASSIUM_ANALYSIS.md)). Potassium 1.6.0 is a single unsigned 28 MB Tauri application (Rust backend, WebView2 interface, Vite/React frontend), not packed or virtualized; its difficulty is size, not protection.
 
-What remains needs a desktop and is dynamic or requires disassembly: the attach mechanism, the resource payload and its validation, and the server-crash cause.
+The headline result is that the shipped executable is a **launcher/updater/UI**: the components that actually touch Roblox — the injected `Potassium.dll`, the external injector, and `Decompiler.exe` — are **downloaded at runtime** from `files.potassium.pro` and are not in the package. Attach locates the `RobloxPlayerBeta.exe` process and hands injection to the downloaded injector (checking its exit code); the executable itself holds no code-injection APIs. Script runs as Luau compiled to bytecode in-process and shipped over a local WebSocket (`127.0.0.1:8224`, `src\ws.rs`) to the injected DLL. The RemoteEvent-flood capability is carried by a user Luau script, not a native primitive.
+
+What remains is dynamic: the server-crash classification, plus on-the-wire capture of the resource payload and of the downloaded injector/DLL.
 
 ## Next steps
 
 The static pass is complete. The remaining work, in priority order:
 
-1. Attach mechanism. Open `Potassium.exe` in a disassembler (Ghidra, Binary Ninja), locate the handler behind the `attach` command, and record which operating-system APIs it uses to make a Roblox client available. This is the one structural gap. See the Attach mechanism section of [`docs/research/ARCHITECTURE.md`](docs/research/ARCHITECTURE.md).
-2. Resource channel. Capture Potassium's own traffic to `files.potassium.pro` during an update to document the `/resource` and `/hashes` exchange: whether the payload is encrypted and how it is validated. Protocol level only.
-3. Server-impact capability. Reproduce the RemoteEvent flood in a private experience you own, with remotes under your control, and measure whether server-side rate limiting and argument validation prevent it (Phase 5 in [`docs/research/METHODOLOGY.md`](docs/research/METHODOLOGY.md)). This is what classifies the server crash as game-level or engine-level.
-4. Detection. Once the attach mechanism and any resource format are known, write the detector and YARA rules against the signals in [`docs/defense/DETECTION.md`](docs/defense/DETECTION.md).
+1. Server-impact capability (primary). Reproduce the RemoteEvent flood in a private experience you own, with remotes under your control, and measure whether server-side rate limiting and argument validation prevent it (Phase 5 in [`docs/research/METHODOLOGY.md`](docs/research/METHODOLOGY.md)). This is what classifies the server crash as game-level or engine-level. Static analysis (P-35) shows Potassium contributes no native flood primitive, which leans game-level, but does not close the question.
+2. Downloaded components. Capture `Potassium.dll` and the injector from a researcher-owned run and read the injector's memory-write technique (manual map vs. `LoadLibrary`) — the one part of the attach chain the launcher does not contain.
+3. Resource channel. Capture traffic to `files.potassium.pro` during an update to document the `/resource` JSON and `/hashes` validation on the wire (the client side is mapped in P-28).
+4. Detection. Turn the static signals into the detector and YARA rules in [`docs/defense/DETECTION.md`](docs/defense/DETECTION.md); the Phase 2-4 findings give concrete host and binary indicators.
 
 ## Repository layout (planned)
 
