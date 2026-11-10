@@ -104,6 +104,30 @@ P-16  confirmed  S       Frontend is a Vite/React bundle embedded by Tauri: /ind
                          ipc.js and isolation_secure.js, bundled fonts (jetbrains-mono,
                          rubik, noto-color-emoji) and images (login-halloween.png,
                          sirmeme.png).
+P-17  confirmed  S       The local MCP server is implemented with the rmcp 2.2.0 crate
+                         (own source path src\mcp.rs; type potassium_tauri_lib::mcp::
+                         TabInfo). Transport is Streamable HTTP (rmcp streamable_http_server
+                         over axum/hyper/tower). Protocol version string "2025-03-26".
+                         Authentication is a bearer token ("A valid Potassium MCP bearer
+                         token is required"); sessions use an Mcp-Session-Id header. The
+                         port is configurable and validated to 1024-65535, bound on
+                         127.0.0.1. This confirms P-15.
+P-18  confirmed  S       Potassium registers itself as an MCP server into external AI
+                         coding tools. Strings reference claude-code (.claude.json,
+                         CLAUDE_CONFIG_DIR), codex (config.toml), cursor (mcp.json) and
+                         vscode, with connection states (connected, notConnected, outdated,
+                         unreadable). The effect is to expose executor control to an
+                         external AI agent as an MCP tool.
+P-19  confirmed  S       Dependency SBOM, read from embedded crate paths (may be partial):
+                         desktop stack tauri 2.11.2, tauri-runtime-wry 2.11.2, tao 0.35.3,
+                         muda 0.19.2, softbuffer 0.4.8; HTTP server axum 0.8.9, hyper
+                         1.10.1, tower 0.5.3; HTTPS client reqwest 0.12.28, rustls 0.23.41,
+                         ring 0.17.14; MCP rmcp 2.2.0; WebSocket tungstenite 0.29.0;
+                         serialization serde_json 1.0.150, schemars 1.2.1, toml_edit
+                         0.22.24; cfb 0.7.3 (OLE/Compound File, used for .lnk shortcuts);
+                         brotli-decompressor 5.0.1; base64, data-encoding, uuid 1.23.2.
+P-20  probable   S       The .lnk shortcuts (P-10) are written by Potassium itself, as
+                         implied by the cfb 0.7.3 dependency (the format .lnk files use).
 ```
 
 ## Corrections log

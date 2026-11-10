@@ -22,7 +22,13 @@ The user-facing application exposes its functions as plain Tauri commands invoke
 
 ## Local control channels
 
-Potassium exposes a local interface on `127.0.0.1` with a `/mcp` path, observed at address `127.0.0.1:8224` (P-14). A set of identifier strings (`mcp_enabled`, `mcp_status`, `mcp_servers`, `mcp_repl`, plus an adjacent port and state-manager reference) indicates a local MCP (Model Context Protocol) server, apparently for programmatic or AI-driven control of the executor (P-15). This, together with the `chat.potassium.pro` endpoint, points to an AI-integration capability that Xeno does not have. The request and response format of this channel is not yet mapped. `localhost:1420` also appears but is Tauri's default dev-server port and is treated as a build artifact.
+Potassium runs a local MCP (Model Context Protocol) server on `127.0.0.1` at `/mcp`, observed at `127.0.0.1:8224` (P-14). It is implemented with the `rmcp` 2.2.0 crate over a Streamable-HTTP transport built on `axum`/`hyper`/`tower`, speaks MCP protocol version `2025-03-26`, authenticates with a bearer token, and tracks sessions with an `Mcp-Session-Id` header (P-17). The port is configurable and validated to the 1024-65535 range.
+
+The purpose is confirmed by how it installs itself: Potassium writes its MCP server into the configuration of external AI coding tools, `claude-code` (`.claude.json`), `codex` (`config.toml`), `cursor` (`mcp.json`), and `vscode` (P-18). The effect is to expose executor control to an AI agent as an MCP tool, an integration Xeno does not have. The MCP server references a `TabInfo` type, suggesting the tools it offers operate on Roblox client tabs or instances. The exact tool set and message schemas are not yet mapped. `localhost:1420` also appears but is Tauri's default dev-server port and is treated as a build artifact.
+
+## Technology stack
+
+From the embedded crate paths (P-19): the desktop shell is Tauri 2.11.2 with the `wry` WebView2 runtime; the HTTP surface (MCP server) is `axum`/`hyper`/`tower`; outbound HTTPS to `*.potassium.pro` uses `reqwest` with `rustls`; WebSocket support is present via `tungstenite`; `toml_edit` edits the AI tools' config files; `cfb` writes the `.lnk` shortcuts; `brotli-decompressor` handles compressed assets or resources. This is a Rust application, which is why the native code carries no separate injectable DLL in the package.
 
 ## Resource handling
 
