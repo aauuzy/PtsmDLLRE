@@ -138,6 +138,20 @@ P-22  confirmed  S       An embedded Roblox API type-definition blob is present 
                          8,193 lines of RBXScriptSignal/type declarations), consistent with
                          an in-app script editor providing Luau autocomplete. Benign in
                          itself; confirms the UI includes a script editor.
+P-23  confirmed  S       The MCP server is a conformant JSON-RPC 2.0 server. Standard
+                         methods present: initialize, tools/list, tools/call, resources/
+                         list, prompts/list, ping, and notifications/{initialized,progress,
+                         cancelled}.
+P-24  confirmed  S       Fuller MCP tool set and control model, from embedded tool
+                         descriptions and parameter type names. list_clients (output type
+                         ListClientsOutput; "Call this before choosing a PID for
+                         execute_script") enumerates attached Roblox clients by PID.
+                         execute_script (input type ExecuteScriptInput) targets a PID and
+                         returns a console cursor. read_console takes after_cursor and an
+                         optional wait_ms ("wait briefly for asynchronous script output").
+                         A clear-console tool clears "the history read_console returns and
+                         the console panel in the app". Control model: list clients, pick a
+                         PID, execute, read output by cursor. Extends P-21.
 ```
 
 ## Corrections log
